@@ -9,7 +9,8 @@ on:
 
 jobs:
   run-eraser:
-    runs-runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
+    
 
     steps:
       - name: Checkout Repository
