@@ -2,15 +2,12 @@ name: Automated Data Broker Removal
 
 on:
   schedule:
-    # Triggers automatically at midnight on the 1st of every month
     - cron: '0 0 1 * *'
   workflow_dispatch:
-    # Allows you to manually click "Run workflow" to start it anytime
 
 jobs:
   run-eraser:
     runs-on: ubuntu-latest
-    
 
     steps:
       - name: Checkout Repository
@@ -25,30 +22,28 @@ jobs:
       - name: Build Eraser Binary
         run: go build -o eraser ./cmd/eraser
 
-      - name: Run Eraser Init & Send
+      - name: Map Variables & Send Requests
         env:
-          # Core Credentials
-          ERASER_FIRST_NAME: ${{ secrets.ERASER_FIRST_NAME }}
-          ERASER_LAST_NAME: ${{ secrets.ERASER_LAST_NAME }}
-          ERASER_EMAIL: ${{ secrets.ERASER_EMAIL }}
+          # Application expected configuration keys
+          ERASER_PROFILE_FIRST_NAME: ${{ secrets.ERASER_FIRST_NAME }}
+          ERASER_PROFILE_LAST_NAME: ${{ secrets.ERASER_LAST_NAME }}
+          ERASER_PROFILE_EMAIL: ${{ secrets.ERASER_EMAIL }}
           ERASER_EMAIL_PROVIDER: ${{ secrets.ERASER_EMAIL_PROVIDER }}
-          ERASER_TEMPLATE: ${{ secrets.ERASER_TEMPLATE }}
-          ERASER_SMTP_HOST: ${{ secrets.ERASER_SMTP_HOST }}
-          ERASER_SMTP_PORT: ${{ secrets.ERASER_SMTP_PORT }}
-          ERASER_SMTP_USERNAME: ${{ secrets.ERASER_SMTP_USERNAME }}
-          ERASER_SMTP_PASSWORD: ${{ secrets.ERASER_SMTP_PASSWORD }}
+          ERASER_OPTIONS_TEMPLATE: ${{ secrets.ERASER_TEMPLATE }}
+          ERASER_EMAIL_SMTP_HOST: ${{ secrets.ERASER_SMTP_HOST }}
+          ERASER_EMAIL_SMTP_PORT: ${{ secrets.ERASER_SMTP_PORT }}
+          ERASER_EMAIL_SMTP_USERNAME: ${{ secrets.ERASER_SMTP_USERNAME }}
+          ERASER_EMAIL_SMTP_PASSWORD: ${{ secrets.ERASER_SMTP_PASSWORD }}
           
           # Optional Identity Details
-          ERASER_ADDRESS: ${{ secrets.ERASER_ADDRESS }}
-          ERASER_CITY: ${{ secrets.ERASER_CITY }}
-          ERASER_STATE: ${{ secrets.ERASER_STATE }}
-          ERASER_ZIP_CODE: ${{ secrets.ERASER_ZIP_CODE }}
-          ERASER_COUNTRY: ${{ secrets.ERASER_COUNTRY }}
-          ERASER_PHONE: ${{ secrets.ERASER_PHONE }}
+          ERASER_PROFILE_ADDRESS: ${{ secrets.ERASER_ADDRESS }}
+          ERASER_PROFILE_CITY: ${{ secrets.ERASER_CITY }}
+          ERASER_PROFILE_STATE: ${{ secrets.ERASER_STATE }}
+          ERASER_PROFILE_ZIP_CODE: ${{ secrets.ERASER_ZIP_CODE }}
+          ERASER_PROFILE_COUNTRY: ${{ secrets.ERASER_COUNTRY }}
+          ERASER_PROFILE_PHONE: ${{ secrets.ERASER_PHONE }}
         run: |
-          # The application requires configuration files generated via init
-          # If the tool blocks interactive flags, we pass a default profile setup
-          ./eraser init --non-interactive || true
+          # We skip interactive "./eraser init" entirely since environment variables are passed directly
+          # We append the dry-run flag to ensure connection works perfectly before sending bulk mail
+          ./eraser send --dry-run
           
-          # Execute the deletion sequence sending emails out
-          ./eraser send
