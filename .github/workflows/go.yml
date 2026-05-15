@@ -22,28 +22,39 @@ jobs:
       - name: Build Eraser Binary
         run: go build -o eraser ./cmd/eraser
 
-      - name: Map Variables & Send Requests
-        env:
-          # Application expected configuration keys
-          ERASER_PROFILE_FIRST_NAME: ${{ secrets.ERASER_FIRST_NAME }}
-          ERASER_PROFILE_LAST_NAME: ${{ secrets.ERASER_LAST_NAME }}
-          ERASER_PROFILE_EMAIL: ${{ secrets.ERASER_EMAIL }}
-          ERASER_EMAIL_PROVIDER: ${{ secrets.ERASER_EMAIL_PROVIDER }}
-          ERASER_OPTIONS_TEMPLATE: ${{ secrets.ERASER_TEMPLATE }}
-          ERASER_EMAIL_SMTP_HOST: ${{ secrets.ERASER_SMTP_HOST }}
-          ERASER_EMAIL_SMTP_PORT: ${{ secrets.ERASER_SMTP_PORT }}
-          ERASER_EMAIL_SMTP_USERNAME: ${{ secrets.ERASER_SMTP_USERNAME }}
-          ERASER_EMAIL_SMTP_PASSWORD: ${{ secrets.ERASER_SMTP_PASSWORD }}
-          
-          # Optional Identity Details
-          ERASER_PROFILE_ADDRESS: ${{ secrets.ERASER_ADDRESS }}
-          ERASER_PROFILE_CITY: ${{ secrets.ERASER_CITY }}
-          ERASER_PROFILE_STATE: ${{ secrets.ERASER_STATE }}
-          ERASER_PROFILE_ZIP_CODE: ${{ secrets.ERASER_ZIP_CODE }}
-          ERASER_PROFILE_COUNTRY: ${{ secrets.ERASER_COUNTRY }}
-          ERASER_PROFILE_PHONE: ${{ secrets.ERASER_PHONE }}
+      - name: Generate Config File & Run Send
         run: |
-          # We skip interactive "./eraser init" entirely since environment variables are passed directly
-          # We append the dry-run flag to ensure connection works perfectly before sending bulk mail
+          # 1. Create the hidden directory expected by the software
+          mkdir -p /home/runner/.eraser
+          
+          # 2. Dynamically construct the config.yaml structure using your actions secrets
+          cat <<EOF > /home/runner/.eraser/config.yaml
+          profile:
+            first_name: "${{ secrets.ERASER_FIRST_NAME }}"
+            last_name: "${{ secrets.ERASER_LAST_NAME }}"
+            email: "${{ secrets.ERASER_EMAIL }}"
+            address: "${{ secrets.ERASER_ADDRESS }}"
+            city: "${{ secrets.ERASER_CITY }}"
+            state: "${{ secrets.ERASER_STATE }}"
+            zip_code: "${{ secrets.ERASER_ZIP_CODE }}"
+            country: "${{ secrets.ERASER_COUNTRY }}"
+            phone: "${{ secrets.ERASER_PHONE }}"
+
+          email:
+            provider: "${{ secrets.ERASER_EMAIL_PROVIDER }}"
+            from: "${{ secrets.ERASER_EMAIL }}"
+            smtp:
+              host: "${{ secrets.ERASER_SMTP_HOST }}"
+              port: ${{ secrets.ERASER_SMTP_PORT }}
+              username: "${{ secrets.ERASER_SMTP_USERNAME }}"
+              password: "${{ secrets.ERASER_SMTP_PASSWORD }}"
+              use_tls: true
+
+          options:
+            template: "${{ secrets.ERASER_TEMPLATE }}"
+            rate_limit_ms: 2000
+          EOF
+
+          # 3. Execute the dry-run sequence to test email authentication safely
           ./eraser send --dry-run
           
