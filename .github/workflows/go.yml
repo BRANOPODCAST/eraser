@@ -56,5 +56,5 @@ jobs:
           EOF
 
           # 3. Execute the dry-run sequence to test email authentication safely
-          ./eraser send --dry-run
+          ./eraser send
           
