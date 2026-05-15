@@ -1,0 +1,53 @@
+name: Automated Data Broker Removal
+
+on:
+  schedule:
+    # Triggers automatically at midnight on the 1st of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    # Allows you to manually click "Run workflow" to start it anytime
+
+jobs:
+  run-eraser:
+    runs-runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Build Eraser Binary
+        run: go build -o eraser ./cmd/eraser
+
+      - name: Run Eraser Init & Send
+        env:
+          # Core Credentials
+          ERASER_FIRST_NAME: ${{ secrets.ERASER_FIRST_NAME }}
+          ERASER_LAST_NAME: ${{ secrets.ERASER_LAST_NAME }}
+          ERASER_EMAIL: ${{ secrets.ERASER_EMAIL }}
+          ERASER_EMAIL_PROVIDER: ${{ secrets.ERASER_EMAIL_PROVIDER }}
+          ERASER_TEMPLATE: ${{ secrets.ERASER_TEMPLATE }}
+          ERASER_SMTP_HOST: ${{ secrets.ERASER_SMTP_HOST }}
+          ERASER_SMTP_PORT: ${{ secrets.ERASER_SMTP_PORT }}
+          ERASER_SMTP_USERNAME: ${{ secrets.ERASER_SMTP_USERNAME }}
+          ERASER_SMTP_PASSWORD: ${{ secrets.ERASER_SMTP_PASSWORD }}
+          
+          # Optional Identity Details
+          ERASER_ADDRESS: ${{ secrets.ERASER_ADDRESS }}
+          ERASER_CITY: ${{ secrets.ERASER_CITY }}
+          ERASER_STATE: ${{ secrets.ERASER_STATE }}
+          ERASER_ZIP_CODE: ${{ secrets.ERASER_ZIP_CODE }}
+          ERASER_COUNTRY: ${{ secrets.ERASER_COUNTRY }}
+          ERASER_PHONE: ${{ secrets.ERASER_PHONE }}
+        run: |
+          # The application requires configuration files generated via init
+          # If the tool blocks interactive flags, we pass a default profile setup
+          ./eraser init --non-interactive || true
+          
+          # Execute the deletion sequence sending emails out
+          ./eraser send
